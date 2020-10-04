@@ -48,3 +48,13 @@ Thumbs.db
 *.mov
 *.wmv
 
+# enviroments
+env
+venv
+
+# vim 
+*.swp
+
+# ideas
+.idea
+.code

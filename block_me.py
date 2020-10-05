@@ -6,8 +6,6 @@ import re
 import threading
 import zlib
 
-import multithread as multithread
-
 from crawler import WebPage, pretty_url, is_good_link, get_all_links_from_content
 import requests
 

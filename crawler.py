@@ -30,7 +30,7 @@ def is_good_link(link, domain):
         domain = domain[:-1] if domain.startswith('/') else domain
         if 'http' not in link or not link.startswith(domain):
             return False
-        res = requests.get(link, timeout=TIME_OUT)
+        res = requests.head(link, timeout=TIME_OUT)
         if res.status_code == 200:
             if 'html' in res.headers['Content-Type']:
                 return True

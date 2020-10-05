@@ -79,7 +79,7 @@ def crawler():
 
 list_thread = []
 for _ in range(100):
-    list_thread.append(threading.Thread(target=crawler()))
+    list_thread.append(threading.Thread(target=crawler))
 
 for t in list_thread:
     t.start()

@@ -6,6 +6,7 @@ This crawler 1. Get n page, 2. Find number of links, 3. Finds Out-degree,
 import requests
 from bs4 import BeautifulSoup
 import re
+import zlib
 
 
 # pretty_url is function that get site url and remove parameters.
@@ -148,6 +149,14 @@ def main():
                     if res.status_code == 200:
                         # set size of page content
                         seed.size = len(res.text.encode('utf-8')) / 1000
+                        # compress context by removing white space
+                        compressed = re.sub(r'\w+', '', res.text)
+                        # convert str to byte because compressing works with bytes
+                        compressed = str.encode(compressed)
+                        # compressing
+                        compressed = zlib.compress(compressed, level=9)
+                        # saving compressed sized in seed
+                        seed.compressed_sized = len(compressed) / 1000
                         # get all links from this res
                         discovered_links = get_all_links_from_content(res.text, domain=INITIAL_SEED.url)
                         # out_degree for this page

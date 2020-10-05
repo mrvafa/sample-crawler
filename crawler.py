@@ -138,7 +138,6 @@ def main():
         # check limit page crawl
         if page_crawled_counter < NUMBER_OF_PAGES_TO_CRAWL:
             try:
-                seed.crawled = True
                 # check if this is a good link to crawl
                 if is_good_link(seed.url, INITIAL_SEED.url):
                     # get page content of a page

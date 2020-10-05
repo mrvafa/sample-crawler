@@ -134,6 +134,7 @@ def main():
     # For loop on seeds to crawl
     # This is a queue, We are using BFS
     for seed in seeds:
+        # check limit page crawl
         if page_crawled_counter < NUMBER_OF_PAGES_TO_CRAWL:
             try:
                 seed.crawled = True

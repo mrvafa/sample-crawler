@@ -208,5 +208,5 @@ def main():
         file = open('robots.txt', 'w')
         file.write(res.text)
 
-
-main()
+if __name__ == '__main__':
+    main()

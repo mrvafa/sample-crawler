@@ -180,10 +180,33 @@ def main():
                         page_crawled_counter += 1
             except Exception as e:
                 print(str(e))
-
+    # Write info in file.
+    file = open('webpage.csv', 'w')
+    file.write('url,out-degree,size,compressed-sized,status_code,crawled\n')
+    sum_size = 0
+    sum_out_degree = 0
+    sum_link_len = 0
+    sum_compressed_size = 0
     for seed in seeds:
         if seed.crawled:
-            print(seed)
+            file.write(str(seed) + '\n')
+            sum_size += seed.size
+            sum_out_degree += seed.out_degree
+            sum_link_len += len(seed.url)
+            sum_compressed_size += seed.compressed_sized
+    file.close()
+    file = open('result.txt', 'w')
+    file.write(f'discovered_links_counter = {discovered_links_counter}\n')
+    file.write(f'avg_size = {sum_size / NUMBER_OF_PAGES_TO_CRAWL}\n')
+    file.write(f'avg_out_degree = {sum_out_degree / NUMBER_OF_PAGES_TO_CRAWL}\n')
+    file.write(f'avg_link_len = {sum_link_len / NUMBER_OF_PAGES_TO_CRAWL}\n')
+    file.write(f'avg_compressed_size = {sum_compressed_size / NUMBER_OF_PAGES_TO_CRAWL}\n')
+    file.close()
+    # Get robots.txt and save it.
+    res = requests.get(INITIAL_SEED.url + '/robots.txt')
+    if res.status_code == 200:
+        file = open('robots.txt', 'w')
+        file.write(res.text)
 
 
 main()

@@ -180,8 +180,6 @@ def main():
                         page_crawled_counter += 1
             except Exception as e:
                 print(str(e))
-            # add counter; crawling this page is finished
-            page_crawled_counter += 1
 
     for seed in seeds:
         if seed.crawled:

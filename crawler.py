@@ -174,6 +174,10 @@ def main():
                         seed.out_degree = out_degree
                         # plus previous discovered_links_counter to current out-degree
                         discovered_links_counter += out_degree
+                        # crawled to True
+                        seed.crawled = True
+                        # add counter; crawling this page is finished
+                        page_crawled_counter += 1
             except Exception as e:
                 print(str(e))
             # add counter; crawling this page is finished

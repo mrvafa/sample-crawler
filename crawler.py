@@ -29,7 +29,7 @@ def pretty_url(url):
 def is_good_link(link, domain):
     try:
         domain = domain[:-1] if domain.startswith('/') else domain
-        if 'http' not in link or not link.startswith(domain):
+        if not link or 'http' not in link or not link.startswith(domain):
             return False
         res = requests.head(link, timeout=TIME_OUT)
         if res.status_code == 200:

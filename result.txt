@@ -1,0 +1,5 @@
+discovered_links_counter = 497
+avg_size = 34.98176666666667
+avg_out_degree = 16.566666666666666
+avg_link_len = 37.46666666666667
+avg_compressed_size = 1.7501333333333335

@@ -103,7 +103,7 @@ This is an int value stands for the limit of discovering pages.
 The crawler will stop after NUMBER_OF_PAGES_TO_DISCOVER discover page.
 This is an int value.
 """
-NUMBER_OF_PAGES_TO_CRAWL = 30
+NUMBER_OF_PAGES_TO_CRAWL = 300
 
 """
 Time-out is number od seconds that we wait for respond.

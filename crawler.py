@@ -86,7 +86,7 @@ class WebPage:
         self.crawled = crawled
 
     def __str__(self):
-        return f'|{self.url[-20:]}|\t{self.out_degree}|\t{self.size}|\t{self.compressed_sized}|\t{self.status_code}\t|{self.crawled}|'
+        return f'{self.url[-20:]},{self.out_degree},{self.size},{self.compressed_sized},{self.status_code},{self.crawled}'
 
     def __eq__(self, other):
         return self.url == other.url

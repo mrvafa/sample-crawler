@@ -192,7 +192,7 @@ def main():
             file.write(str(seed) + '\n')
             sum_size += seed.size
             sum_out_degree += seed.out_degree
-            sum_link_size += len(str.encode(seed.url))
+            sum_link_size += len(str.encode(seed.url)) / 1000
             sum_compressed_size += seed.compressed_sized
     file.close()
     file = open('result.txt', 'w')

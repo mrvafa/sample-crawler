@@ -1,5 +1,5 @@
-discovered_links_counter = 3565
-avg_size = 37.458823333333335
-avg_out_degree = 11.883333333333333
-avg_link_size = 47.44
-avg_compressed_size = 1.7885799999999998
+discovered_links_counter = 3559
+avg_size = 37.53281666666667
+avg_out_degree = 11.863333333333333
+avg_link_size = 0.04744666666666666
+avg_compressed_size = 1.7892199999999987

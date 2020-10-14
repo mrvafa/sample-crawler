@@ -22,6 +22,7 @@ multithread==1.0.1
 packaging==20.3
 pep517==0.8.2
 progress==1.5
+pymongo==3.11.0
 pyparsing==2.4.6
 pytoml==0.1.21
 requests==2.22.0

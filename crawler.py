@@ -7,18 +7,21 @@ import requests
 from bs4 import BeautifulSoup
 import re
 import zlib
+from pymongo import MongoClient
 
 
 # pretty_url is function that get site url and remove parameters.
 def pretty_url(url):
+    # remove parameters
     url = re.sub(r'([#?]).*?(/|$)', '/', url)
+    # split http?:// and others
     if url.startswith('https://'):
         url = (url[:9], url[9:])
     elif url.startswith('http://'):
         url = (url[:8], url[8:])
     else:
         url = ('', url)
-
+    # remove /
     url = url[0] + re.sub(f'/+', f'/', url[1])
     url = re.sub(r'/*$', '', url)
     return url
@@ -28,6 +31,7 @@ def pretty_url(url):
 # link is a HTML or web app not an image or etc
 def is_good_link(link, domain):
     try:
+        # remove /
         domain = domain[:-1] if domain.startswith('/') else domain
         if not link or 'http' not in link or not link.startswith(domain):
             return False
@@ -77,16 +81,18 @@ class WebPage:
     # title of page
     # Does the has timeout or any other errors
     # status code is an int that page return
-    def __init__(self, url, out_degree=0, size=0, compressed_sized=0, status_code=0, crawled=False):
+    def __init__(self, url, out_degree=0, size=0, compressed_size=0, status_code=0, crawled=False,
+                 compressed_content=''):
         self.url = url
         self.out_degree = out_degree
         self.size = size
-        self.compressed_sized = compressed_sized
+        self.compressed_size = compressed_size
         self.status_code = status_code
         self.crawled = crawled
+        self.compressed_content = compressed_content
 
     def __str__(self):
-        return f'{self.url[-20:]},{self.out_degree},{self.size},{self.compressed_sized},{self.status_code},{self.crawled}'
+        return f'{self.url[-20:]},{self.out_degree},{self.size},{self.compressed_size},{self.status_code},{self.crawled}'
 
     def __eq__(self, other):
         return self.url == other.url
@@ -103,13 +109,35 @@ This is an int value stands for the limit of discovering pages.
 The crawler will stop after NUMBER_OF_PAGES_TO_DISCOVER discover page.
 This is an int value.
 """
-NUMBER_OF_PAGES_TO_CRAWL = 300
+NUMBER_OF_PAGES_TO_CRAWL = 30
 
 """
 Time-out is number od seconds that we wait for respond.
 This is an int.
 """
 TIME_OUT = 30
+
+
+# This function gets web object and write it in DB
+def save_web_page_in_db(web_page):
+    # create mongo client
+    client = MongoClient()
+    # create/get database
+    db = client.web_crawler
+    # create/get collection
+    web_crawler_web_page = db['web_page']
+    # create data collection
+    data = {
+        'url': web_page.url,
+        'out_degree': web_page.out_degree,
+        'size': web_page.size,
+        'compressed_size': web_page.size,
+        'status_code': web_page.status_code,
+        'crawled': web_page.crawled,
+        'compressed_content': web_page.compressed_content,
+    }
+    # write data in collection
+    web_crawler_web_page.insert_one(data)
 
 
 # This is main function by running this function you will get the output.
@@ -119,6 +147,8 @@ def main():
     The initial seed is the first element of the list
     """
     seeds = [INITIAL_SEED]
+    # write INITIAL_SEED in DB
+    save_web_page_in_db(INITIAL_SEED)
 
     """
     This is a counter to counter the number of links.
@@ -155,7 +185,9 @@ def main():
                         # compressing
                         compressed = zlib.compress(compressed, level=9)
                         # saving compressed sized in seed
-                        seed.compressed_sized = len(compressed) / 1000
+                        seed.compressed_size = len(compressed) / 1000
+                        # set seed compressed content
+                        seed.compressed_content = compressed
                         # get all links from this res
                         discovered_links = get_all_links_from_content(res.text, domain=INITIAL_SEED.url)
                         # out_degree for this page
@@ -178,6 +210,8 @@ def main():
                         seed.crawled = True
                         # add counter; crawling this page is finished
                         page_crawled_counter += 1
+                        # save seed in DB
+                        save_web_page_in_db(seed)
             except Exception as e:
                 print(str(e))
     # Write info in file.
@@ -193,14 +227,14 @@ def main():
             sum_size += seed.size
             sum_out_degree += seed.out_degree
             sum_link_size += len(str.encode(seed.url)) / 1000
-            sum_compressed_size += seed.compressed_sized
+            sum_compressed_size += seed.compressed_size
     file.close()
     file = open('result.txt', 'w')
     file.write(f'discovered_links_counter = {discovered_links_counter}\n')
-    file.write(f'avg_size = {sum_size / NUMBER_OF_PAGES_TO_CRAWL}\n')
+    file.write(f'avg_size = {sum_size / NUMBER_OF_PAGES_TO_CRAWL}KB\n')
     file.write(f'avg_out_degree = {sum_out_degree / NUMBER_OF_PAGES_TO_CRAWL}\n')
-    file.write(f'avg_link_size = {sum_link_size / NUMBER_OF_PAGES_TO_CRAWL}\n')
-    file.write(f'avg_compressed_size = {sum_compressed_size / NUMBER_OF_PAGES_TO_CRAWL}\n')
+    file.write(f'avg_link_size = {sum_link_size / NUMBER_OF_PAGES_TO_CRAWL}KB\n')
+    file.write(f'avg_compressed_size = {sum_compressed_size / NUMBER_OF_PAGES_TO_CRAWL}KB\n')
     file.close()
     # Get robots.txt and save it.
     res = requests.get(INITIAL_SEED.url + '/robots.txt')

@@ -1,7 +1,7 @@
 """
 This code is a sample crawler without saving pages in DB.
 This crawler 1. Get n page, 2. Find number of links, 3. Finds Out-degree,
-4. Max, MIN, AVG Pages with/without COMPRESSION and 5. MAX, MIN , AVG url chars
+4. Max, MIN, AVG Pages with/without COMPRESSION and 5. MAX, MIN , AVG url size
 """
 import requests
 from bs4 import BeautifulSoup

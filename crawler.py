@@ -109,13 +109,75 @@ This is an int value stands for the limit of discovering pages.
 The crawler will stop after NUMBER_OF_PAGES_TO_DISCOVER discover page.
 This is an int value.
 """
-NUMBER_OF_PAGES_TO_CRAWL = 30
+NUMBER_OF_PAGES_TO_CRAWL = 300
 
 """
 Time-out is number od seconds that we wait for respond.
 This is an int.
 """
 TIME_OUT = 30
+
+
+# This is function for getting crawler index
+# Crawler index is an INT value that represent of current url that will be crawled
+def get_crawler_index():
+    # create mongo client
+    client = MongoClient()
+    # create/get database
+    db = client.web_crawler
+    # create/get collection
+    web_page_index = db['web_page_index']
+    # If there is no index in DB
+    if not web_page_index.find_one({'index': re.compile('.*')}):
+        # insert 0 value for index in DB
+        db['web_page_index'].insert_one({'index': '0'})
+    # Read index from DB
+    index = int(web_page_index.find_one({'index': re.compile('.*')})['index'])
+    # Return index
+    return index
+
+
+# This function is going to put 0 in crawler index.
+def clear_crawler_index():
+    # create mongo client
+    client = MongoClient()
+    # create/get database
+    db = client.web_crawler
+    # create/get collection
+    web_crawler_web_page = db['web_page_index']
+    # If there is index in DB
+    if web_crawler_web_page.find_one({'index': re.compile('.*')}):
+        # Update index with index + 1
+        web_crawler_web_page.update(
+            {'index': re.compile(r'.*', re.IGNORECASE)},
+            {'$set': {'index': str(0)}}
+        )
+    else:
+        # insert 0 value for index in DB
+        db['web_crawler_web_page'].insert_one({'index': '0'})
+
+
+# This function is going to add 1 to crawler index and return new value.
+def add_one_value_to_crawler_index():
+    # create mongo client
+    client = MongoClient()
+    # create/get database
+    db = client.web_crawler
+    # create/get collection
+    web_crawler_web_page = db['web_page_index']
+    # If there is index in DB
+    if not web_crawler_web_page.find_one({'index': re.compile('.*')}):
+        # set 0 for index
+        clear_crawler_index()
+    # Read index from DB and PLUS by 1
+    index = int(web_crawler_web_page.find_one({'index': re.compile('.*')})['index']) + 1
+    # Update index with new index
+    web_crawler_web_page.update_one(
+        {'index': re.compile(r'.*', re.IGNORECASE)},
+        {'$set': {'index': str(index)}}
+    )
+    # return index
+    return index
 
 
 # This function gets web object and write it in DB
@@ -126,8 +188,11 @@ def save_web_page_in_db(web_page):
     db = client.web_crawler
     # create/get collection
     web_crawler_web_page = db['web_page']
+    # get last item index of web page in DB.
+    index = get_number_of_web_page_in_db()
     # create data collection
     data = {
+        'index': index,
         'url': web_page.url,
         'out_degree': web_page.out_degree,
         'size': web_page.size,
@@ -140,13 +205,96 @@ def save_web_page_in_db(web_page):
     web_crawler_web_page.insert_one(data)
 
 
+# Update web_page with new values
+def update_web_page_in_db(web_page):
+    # create mongo client
+    client = MongoClient()
+    # create/get database
+    db = client.web_crawler
+    # create/get collection
+    web_crawler_web_page = db['web_page']
+    if web_crawler_web_page.find_one({'url': web_page.url}):
+        web_crawler_web_page.update_one(
+            {'url': web_page.url},
+            {'$set': {'out_degree': web_page.out_degree,
+                      'size': web_page.size,
+                      'compressed_size': web_page.size,
+                      'status_code': web_page.status_code,
+                      'crawled': web_page.crawled,
+                      'compressed_content': web_page.compressed_content, }})
+
+
+# get url and check if there is web page in bd with this url
+def is_url_in_web_page_db(url):
+    # create mongo client
+    client = MongoClient()
+    # create/get database
+    db = client.web_crawler
+    # create/get collection
+    web_crawler_web_page = db['web_page']
+    if web_crawler_web_page.find_one({'url': url}):
+        return True
+    return False
+
+
+# This function will delete web_crawler DB
+def delete_db():
+    # create mongo client
+    client = MongoClient()
+    # Drop database
+    client.drop_database('web_crawler')
+
+
+# This function is getting web_page by index.
+def get_web_page_from_db_by_index(index):
+    # create mongo client
+    client = MongoClient()
+    # create/get database
+    db = client.web_crawler
+    # create/get collection
+    web_crawler_web_page = db['web_page']
+    # Find web page by index
+    web_page = web_crawler_web_page.find_one({'index': index})
+    # Create web page Object
+    web_page = WebPage(
+        url=web_page['url'],
+        size=web_page['size'],
+        out_degree=web_page['out_degree'],
+        compressed_size=web_page['compressed_size'],
+        status_code=web_page['status_code'],
+        crawled=web_page['crawled'],
+        compressed_content=web_page['compressed_content'],
+    )
+    # Return web_page
+    return web_page
+
+
+# get len of web page in DB.
+def get_number_of_web_page_in_db():
+    # create mongo client
+    client = MongoClient()
+    # create/get database
+    db = client.web_crawler
+    # create/get collection
+    web_crawler_web_page = db['web_page']
+    # get length of web pages in DB
+    length = web_crawler_web_page.estimated_document_count()
+    # Return length
+    return length
+
+
 # This is main function by running this function you will get the output.
 def main():
-    """
-    seeds is list of links that will be crawl.
-    The initial seed is the first element of the list
-    """
-    seeds = [INITIAL_SEED]
+    # This value is representing for allowing crawling.
+    # For example if the counter >= NUMBER_OF_PAGES_TO_CRAWL this value will set to False
+    continue_crawling = True
+
+    # delete db
+    delete_db()
+
+    # clear index. It will set index=0 to start from first link
+    clear_crawler_index()
+
     # write INITIAL_SEED in DB
     save_web_page_in_db(INITIAL_SEED)
 
@@ -162,32 +310,40 @@ def main():
     """
     page_crawled_counter = 0
 
-    # For loop on seeds to crawl
+    # get len of web pages in db
+    end_of_db_index = get_number_of_web_page_in_db()
+
+    # get crawl index
+    web_page_index = get_crawler_index()
+
+    # While on seeds to crawl
     # This is a queue, We are using BFS
-    for seed in seeds:
+    while web_page_index < end_of_db_index and continue_crawling:
         # check limit page crawl
         if page_crawled_counter < NUMBER_OF_PAGES_TO_CRAWL:
             try:
+                # get web page object from index
+                web_page = get_web_page_from_db_by_index(web_page_index)
                 # check if this is a good link to crawl
-                if is_good_link(seed.url, INITIAL_SEED.url):
+                if is_good_link(web_page.url, INITIAL_SEED.url):
                     # get page content of a page
-                    res = requests.get(seed.url, timeout=TIME_OUT)
-                    # set seed status_code
-                    seed.status_code = res.status_code
+                    res = requests.get(web_page.url, timeout=TIME_OUT)
+                    # set web_page status_code
+                    web_page.status_code = res.status_code
                     # check if respond is 200
                     if res.status_code == 200:
                         # set size of page content
-                        seed.size = len(res.text.encode('utf-8')) / 1000
+                        web_page.size = len(res.text.encode('utf-8')) / 1000
                         # compress context by removing white space
                         compressed = re.sub(r'\w+', '', res.text)
                         # convert str to byte because compressing works with bytes
                         compressed = str.encode(compressed)
                         # compressing
                         compressed = zlib.compress(compressed, level=9)
-                        # saving compressed sized in seed
-                        seed.compressed_size = len(compressed) / 1000
-                        # set seed compressed content
-                        seed.compressed_content = compressed
+                        # saving compressed sized in web_page
+                        web_page.compressed_size = len(compressed) / 1000
+                        # set web_page compressed content
+                        web_page.compressed_content = compressed
                         # get all links from this res
                         discovered_links = get_all_links_from_content(res.text, domain=INITIAL_SEED.url)
                         # out_degree for this page
@@ -197,44 +353,59 @@ def main():
                             # use pretty url
                             d_link = pretty_url(d_link)
                             # check if link is not in seeds
-                            if WebPage(d_link) not in seeds:
+                            if not is_url_in_web_page_db(d_link):
                                 # add web page to seeds
-                                seeds.append(WebPage(url=d_link))
-                                # add discovered_links_counter
-                                out_degree += 1
-                        # set out-degree for seed
-                        seed.out_degree = out_degree
+                                save_web_page_in_db(WebPage(url=d_link))
+                            # add discovered_links_counter
+                            out_degree += 1
+                        # set out-degree for web_page
+                        web_page.out_degree = out_degree
                         # plus previous discovered_links_counter to current out-degree
                         discovered_links_counter += out_degree
                         # crawled to True
-                        seed.crawled = True
+                        web_page.crawled = True
                         # add counter; crawling this page is finished
                         page_crawled_counter += 1
-                        # save seed in DB
-                        save_web_page_in_db(seed)
+                        # save web_page in DB
+                        update_web_page_in_db(web_page)
+                end_of_db_index = get_number_of_web_page_in_db()
+                # Update index
+                add_one_value_to_crawler_index()
+                # Update web_page_index value
+                web_page_index = get_crawler_index()
             except Exception as e:
                 print(str(e))
+        # if page_crawled_counter >= NUMBER_OF_PAGES_TO_CRAWL
+        else:
+            # break crawling
+            continue_crawling = False
     # Write info in file.
     file = open('webpage.csv', 'w')
+    # Write header for csv
     file.write('url,out-degree,size,compressed-sized,status_code,crawled\n')
+    # Initial values
     sum_size = 0
     sum_out_degree = 0
     sum_link_size = 0
     sum_compressed_size = 0
-    for seed in seeds:
-        if seed.crawled:
-            file.write(str(seed) + '\n')
-            sum_size += seed.size
-            sum_out_degree += seed.out_degree
-            sum_link_size += len(str.encode(seed.url)) / 1000
-            sum_compressed_size += seed.compressed_size
+    # Update len DB
+    end_of_db_index = get_number_of_web_page_in_db()
+    # loop throw DB
+    for web_page_index in range(end_of_db_index):
+        web_page = get_web_page_from_db_by_index(web_page_index)
+        if web_page.crawled:
+            file.write(str(web_page) + '\n')
+            sum_size += web_page.size
+            sum_out_degree += web_page.out_degree
+            sum_link_size += len(str.encode(web_page.url)) / 1000
+            sum_compressed_size += web_page.compressed_size
     file.close()
     file = open('result.txt', 'w')
     file.write(f'discovered_links_counter = {discovered_links_counter}\n')
-    file.write(f'avg_size = {sum_size / NUMBER_OF_PAGES_TO_CRAWL}KB\n')
+    file.write(f'avg_size = {sum_size / NUMBER_OF_PAGES_TO_CRAWL} KB\n')
     file.write(f'avg_out_degree = {sum_out_degree / NUMBER_OF_PAGES_TO_CRAWL}\n')
-    file.write(f'avg_link_size = {sum_link_size / NUMBER_OF_PAGES_TO_CRAWL}KB\n')
-    file.write(f'avg_compressed_size = {sum_compressed_size / NUMBER_OF_PAGES_TO_CRAWL}KB\n')
+    file.write(f'avg_link_size = {sum_link_size / NUMBER_OF_PAGES_TO_CRAWL} KB\n')
+    file.write(f'avg_compressed_size = {sum_compressed_size / NUMBER_OF_PAGES_TO_CRAWL} KB\n')
     file.close()
     # Get robots.txt and save it.
     res = requests.get(INITIAL_SEED.url + '/robots.txt')

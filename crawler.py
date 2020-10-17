@@ -218,7 +218,7 @@ def update_web_page_in_db(web_page):
             {'url': web_page.url},
             {'$set': {'out_degree': web_page.out_degree,
                       'size': web_page.size,
-                      'compressed_size': web_page.size,
+                      'compressed_size': web_page.compressed_size,
                       'status_code': web_page.status_code,
                       'crawled': web_page.crawled,
                       'compressed_content': web_page.compressed_content, }})
